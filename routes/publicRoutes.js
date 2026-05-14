@@ -113,5 +113,16 @@ module.exports = (usersCollection, tuitionsCollection) => {
     }
   });
 
+  // GET /tutors - Fetch all tutors
+  router.get("/tutors", async (req, res) => {
+    try {
+      const tutors = await usersCollection.find({ role: "Tutor" }).toArray();
+      res.send(tutors);
+    } catch (error) {
+      console.error("Error fetching tutors:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
   return router;
 };
