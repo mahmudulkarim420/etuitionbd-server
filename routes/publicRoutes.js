@@ -5,7 +5,7 @@ const router = express.Router();
  * Public Routes
  * Handles user registration and role fetching
  */
-module.exports = (usersCollection, tuitionsCollection) => {
+module.exports = (usersCollection, tuitionsCollection, tutorsCollection) => {
   
   // GET /all-tuitions - Advanced search, filtering, sorting, and pagination
   router.get("/all-tuitions", async (req, res) => {
@@ -113,13 +113,11 @@ module.exports = (usersCollection, tuitionsCollection) => {
     }
   });
 
-  // GET /tutors - Fetch all tutors
+  // GET /tutors - Fetch all tutors from the dedicated collection
   router.get("/tutors", async (req, res) => {
     try {
-      // Find users with role 'Tutor' (case-insensitive)
-      const tutors = await usersCollection.find({ 
-        role: { $regex: /^tutor$/i } 
-      }).toArray();
+      // Fetch all tutors from the 'tutors' collection (no filters for now)
+      const tutors = await tutorsCollection.find({}).toArray();
       res.send(tutors);
     } catch (error) {
       console.error("Error fetching tutors:", error);

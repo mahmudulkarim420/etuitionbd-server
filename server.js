@@ -48,6 +48,7 @@ async function run() {
     const db = client.db("tuitionDB");
     const usersCollection = db.collection("users");
     const tuitionsCollection = db.collection("tuitions");
+    const tutorsCollection = db.collection("tutors");
     const applicationsCollection = db.collection("applications");
     const paymentsCollection = db.collection("payments");
 
@@ -57,7 +58,7 @@ async function run() {
     const studentRoutes = require("./routes/studentRoutes")(usersCollection, tuitionsCollection, applicationsCollection, paymentsCollection);
     const tutorRoutes = require("./routes/tutorRoutes")(tuitionsCollection, applicationsCollection, paymentsCollection);
     const adminRoutes = require("./routes/adminRoutes")(usersCollection, tuitionsCollection, paymentsCollection);
-    const publicRoutes = require("./routes/publicRoutes")(usersCollection, tuitionsCollection);
+    const publicRoutes = require("./routes/publicRoutes")(usersCollection, tuitionsCollection, tutorsCollection);
 
     // --- USE ROUTES ---
     app.use("/api/student", verifyToken, verifyRole("Student", usersCollection), studentRoutes);
