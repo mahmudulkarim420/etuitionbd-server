@@ -1,4 +1,5 @@
 const express = require("express");
+const { ObjectId } = require("mongodb");
 const router = express.Router();
 
 /**
@@ -109,6 +110,22 @@ module.exports = (usersCollection, tuitionsCollection, tutorsCollection) => {
       res.send(user);
     } catch (error) {
       console.error("Error fetching user role:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
+  // GET /tuition/:id - Fetch a single tuition by ID
+  router.get("/tuition/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await tuitionsCollection.findOne(query);
+      if (!result) {
+        return res.status(404).send({ message: "Tuition not found" });
+      }
+      res.send(result);
+    } catch (error) {
+      console.error("Error fetching tuition details:", error);
       res.status(500).send({ message: "Internal Server Error" });
     }
   });
