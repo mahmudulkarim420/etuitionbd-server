@@ -80,8 +80,7 @@ module.exports = (usersCollection, tuitionsCollection, applicationsCollection, p
     res.send(result);
   });
 
-  // --- ৮. প্রোফাইল সেটিংস আপডেট (Profile Settings Update) ---
-  // PATCH: /api/student/update-profile/:email
+  // --- 8. Profile Settings Update ---
   router.patch("/update-profile/:email", async (req, res) => {
     const email = req.params.email;
     const filter = { email: email };
@@ -90,10 +89,69 @@ module.exports = (usersCollection, tuitionsCollection, applicationsCollection, p
         name: req.body.name,
         photoUrl: req.body.photoUrl,
         phone: req.body.phone,
-        // Onno kono field thakle shetao add kora jabe
       },
     };
     const result = await usersCollection.updateOne(filter, updatedDoc);
+    res.send(result);
+  });
+
+  // --- 9. Stripe Payment Intent ---
+  router.post("/create-payment-intent", async (req, res) => {
+    const { price } = req.body;
+    if (!price) return res.status(400).send({ message: "Price is required" });
+
+    // Stripe expects amount in cents
+    const amount = parseInt(price * 100);
+
+    const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount,
+      currency: "usd",
+      payment_method_types: ["card"],
+    });
+
+    res.send({
+      clientSecret: paymentIntent.client_secret,
+    });
+  });
+
+  // --- 10. Save Payment Details ---
+  router.post("/payments", async (req, res) => {
+    const payment = req.body;
+    const paymentResult = await paymentsCollection.insertOne(payment);
+    res.send(paymentResult);
+  });
+
+  // --- 11. Update Application Status ---
+  router.patch("/application-status/:id", async (req, res) => {
+    const id = req.params.id;
+    const { status } = req.body;
+    const filter = { _id: new ObjectId(id) };
+    const updatedDoc = {
+      $set: { status },
+    };
+    const result = await applicationsCollection.updateOne(filter, updatedDoc);
+    res.send(result);
+  });
+
+  // --- 12. Update Tuition Status ---
+  router.patch("/tuition-status/:id", async (req, res) => {
+    const id = req.params.id;
+    const { status } = req.body;
+    const filter = { _id: new ObjectId(id) };
+    const updatedDoc = {
+      $set: { status },
+    };
+    const result = await tuitionsCollection.updateOne(filter, updatedDoc);
+    res.send(result);
+  });
+
+  // --- 13. Get Single Application ---
+  router.get("/application/:id", async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await applicationsCollection.findOne(query);
     res.send(result);
   });
 
