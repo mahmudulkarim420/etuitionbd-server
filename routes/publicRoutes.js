@@ -114,6 +114,40 @@ module.exports = (usersCollection, tuitionsCollection, tutorsCollection) => {
     }
   });
 
+  // GET /user/:email - Fetch full user profile
+  router.get("/user/:email", async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email };
+    try {
+      const user = await usersCollection.findOne(query);
+      if (!user) {
+        return res.status(404).send({ message: "User not found" });
+      }
+      res.send(user);
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
+  // PATCH /user/:email - Update user profile details
+  router.patch("/user/:email", async (req, res) => {
+    const email = req.params.email;
+    const filter = { email: email };
+    const updatedDoc = {
+      $set: {
+        ...req.body, // This allows updating phone, qualifications, bio, etc.
+      },
+    };
+    try {
+      const result = await usersCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
   // GET /tuition/:id - Fetch a single tuition by ID
   router.get("/tuition/:id", async (req, res) => {
     try {
@@ -133,11 +167,24 @@ module.exports = (usersCollection, tuitionsCollection, tutorsCollection) => {
   // GET /tutors - Fetch all tutors from the dedicated collection
   router.get("/tutors", async (req, res) => {
     try {
-      // Fetch all tutors from the 'tutors' collection (no filters for now)
       const tutors = await tutorsCollection.find({}).toArray();
       res.send(tutors);
     } catch (error) {
       console.error("Error fetching tutors:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
+  // DEV ONLY: Approve all pending tuitions
+  router.patch("/dev/approve-all", async (req, res) => {
+    try {
+      const result = await tuitionsCollection.updateMany(
+        { status: "Pending" },
+        { $set: { status: "Approved" } }
+      );
+      res.send(result);
+    } catch (error) {
+      console.error("Error approving tuitions:", error);
       res.status(500).send({ message: "Internal Server Error" });
     }
   });

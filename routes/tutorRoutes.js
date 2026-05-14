@@ -55,11 +55,11 @@ module.exports = (tuitionsCollection, applicationsCollection, paymentsCollection
     }
   });
 
-  // GET /ongoing-tuitions/:email - Fetch applications where status is 'Approved' (Paid)
+  // GET /ongoing-tuitions/:email - Fetch applications where status is 'Accepted' (Paid)
   router.get("/ongoing-tuitions/:email", async (req, res) => {
     const email = req.params.email;
     try {
-      const query = { tutorEmail: email, status: "Approved" };
+      const query = { tutorEmail: email, status: "Accepted" };
       const result = await applicationsCollection.find(query).toArray();
       res.send(result);
     } catch (error) {
