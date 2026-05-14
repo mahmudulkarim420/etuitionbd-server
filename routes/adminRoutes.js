@@ -59,6 +59,17 @@ module.exports = (usersCollection, tuitionsCollection, paymentsCollection) => {
     }
   });
 
+  // GET /all-tuitions-admin - Fetch all tuitions for admin management
+  router.get("/all-tuitions-admin", async (req, res) => {
+    try {
+      const result = await tuitionsCollection.find().sort({ createdAt: -1 }).toArray();
+      res.send(result);
+    } catch (error) {
+      console.error("Error fetching all tuitions for admin:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
   // PATCH /tuition/approve/:id - Approve a tuition post
   router.patch("/tuition/approve/:id", async (req, res) => {
     const id = req.params.id;
@@ -83,6 +94,19 @@ module.exports = (usersCollection, tuitionsCollection, paymentsCollection) => {
       res.send(result);
     } catch (error) {
       console.error("Error rejecting tuition:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
+  // DELETE /tuition/:id - Delete a tuition post
+  router.delete("/tuition/:id", async (req, res) => {
+    const id = req.params.id;
+    try {
+      const query = { _id: new ObjectId(id) };
+      const result = await tuitionsCollection.deleteOne(query);
+      res.send(result);
+    } catch (error) {
+      console.error("Error deleting tuition:", error);
       res.status(500).send({ message: "Internal Server Error" });
     }
   });
