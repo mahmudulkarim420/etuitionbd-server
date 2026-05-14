@@ -18,7 +18,7 @@ const verifyRole = (requiredRole, usersCollection) => {
         return res.status(404).send({ message: "User not found" });
       }
 
-      if (user.role !== requiredRole) {
+      if (user.role?.toLowerCase() !== requiredRole?.toLowerCase()) {
         return res.status(403).send({ message: "Forbidden: You do not have the required role" });
       }
 
