@@ -2,7 +2,12 @@ const express = require("express");
 const { ObjectId } = require("mongodb");
 const router = express.Router();
 
-module.exports = (usersCollection, tuitionsCollection, applicationsCollection, paymentsCollection) => {
+module.exports = (
+  usersCollection,
+  tuitionsCollection,
+  applicationsCollection,
+  paymentsCollection,
+) => {
   // --- ১. টিউশন পোস্ট করা (Create) ---
   // POST: /api/student/post-tuition
   router.post("/post-tuition", async (req, res) => {
@@ -57,7 +62,10 @@ module.exports = (usersCollection, tuitionsCollection, applicationsCollection, p
   // GET: /api/student/applied-tutors/:tuitionId
   router.get("/applied-tutors/:tuitionId", async (req, res) => {
     const tuitionId = req.params.tuitionId;
-    const query = { tuitionId: tuitionId };
+    const query = { 
+      tuitionId: new ObjectId(tuitionId),
+      status: { $in: ["Approved", "Accepted"] }
+    };
     const result = await applicationsCollection.find(query).toArray();
     res.send(result);
   });
@@ -66,7 +74,10 @@ module.exports = (usersCollection, tuitionsCollection, applicationsCollection, p
   // GET: /api/student/applications/student/:email
   router.get("/applications/student/:email", async (req, res) => {
     const email = req.params.email;
-    const query = { studentEmail: email };
+    const query = { 
+      studentEmail: email,
+      status: { $in: ["Approved", "Accepted"] }
+    };
     const result = await applicationsCollection.find(query).toArray();
     res.send(result);
   });

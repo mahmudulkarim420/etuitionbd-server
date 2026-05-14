@@ -6,7 +6,33 @@ const router = express.Router();
  * Admin Routes
  * Handles user management, tuition moderation, and system statistics
  */
-module.exports = (usersCollection, tuitionsCollection, paymentsCollection) => {
+module.exports = (usersCollection, tuitionsCollection, paymentsCollection, applicationsCollection) => {
+
+  // GET /all-applications - Fetch all tutor applications for moderation
+  router.get("/all-applications", async (req, res) => {
+    try {
+      const result = await applicationsCollection.find().sort({ appliedAt: -1 }).toArray();
+      res.send(result);
+    } catch (error) {
+      console.error("Error fetching all applications:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
+  // PATCH /application/status/:id - Update application status (Approve/Reject)
+  router.patch("/application/status/:id", async (req, res) => {
+    const id = req.params.id;
+    const { status } = req.body;
+    try {
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = { $set: { status: status } };
+      const result = await applicationsCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    } catch (error) {
+      console.error("Error updating application status:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
 
   // GET /all-users - Fetch all users for management
   router.get("/all-users", async (req, res) => {

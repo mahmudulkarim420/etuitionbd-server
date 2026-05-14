@@ -7,7 +7,6 @@ const router = express.Router();
  * Handles tuition applications, ongoing tuitions, and revenue tracking
  */
 module.exports = (tuitionsCollection, applicationsCollection, paymentsCollection) => {
-
   // GET /available-tuitions - Fetch all tuitions where status is 'Approved'
   router.get("/available-tuitions", async (req, res) => {
     try {
