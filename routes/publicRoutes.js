@@ -116,7 +116,10 @@ module.exports = (usersCollection, tuitionsCollection) => {
   // GET /tutors - Fetch all tutors
   router.get("/tutors", async (req, res) => {
     try {
-      const tutors = await usersCollection.find({ role: "Tutor" }).toArray();
+      // Find users with role 'Tutor' (case-insensitive)
+      const tutors = await usersCollection.find({ 
+        role: { $regex: /^tutor$/i } 
+      }).toArray();
       res.send(tutors);
     } catch (error) {
       console.error("Error fetching tutors:", error);
