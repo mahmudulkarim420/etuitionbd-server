@@ -120,8 +120,8 @@ module.exports = (
     const { price } = req.body;
     if (!price) return res.status(400).send({ message: "Price is required" });
 
-    // Stripe expects amount in cents
-    const amount = parseInt(price * 100);
+    // Price is already converted to cents in the frontend
+    const amount = parseInt(price);
 
     const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
