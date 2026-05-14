@@ -14,9 +14,13 @@ const verifyToken = (req, res, next) => {
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
-      return res.status(401).send({ message: "Unauthorized access: Invalid token" });
+      console.error("JWT Verify Error:", err.message);
+      return res.status(401).send({ 
+        message: "Unauthorized access: " + (err.name === 'TokenExpiredError' ? "Token Expired" : "Invalid Token"),
+        error: err.message
+      });
     }
-    req.user = decoded; // Attach decoded payload (email) to request object
+    req.user = decoded;
     next();
   });
 };
