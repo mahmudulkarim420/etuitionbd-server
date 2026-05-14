@@ -123,7 +123,13 @@ module.exports = (
     try {
       // Convert price to cents as per user request
       const amount = parseInt(price * 100);
-      const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+      
+      const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
+      if (!secretKey) {
+        return res.status(500).send({ message: "Stripe Secret Key is missing in server environment" });
+      }
+
+      const stripe = require("stripe")(secretKey);
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
