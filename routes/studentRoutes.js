@@ -62,6 +62,15 @@ module.exports = (usersCollection, tuitionsCollection, applicationsCollection, p
     res.send(result);
   });
 
+  // --- 5.1 নির্দিষ্ট স্টুডেন্টের সব অ্যাপলিকেশন দেখা ---
+  // GET: /api/student/applications/student/:email
+  router.get("/applications/student/:email", async (req, res) => {
+    const email = req.params.email;
+    const query = { studentEmail: email };
+    const result = await applicationsCollection.find(query).toArray();
+    res.send(result);
+  });
+
   // --- ৬. টিউটর রিজেক্ট করা ---
   // PATCH: /api/student/reject-tutor/:applicationId
   router.patch("/reject-tutor/:applicationId", async (req, res) => {
