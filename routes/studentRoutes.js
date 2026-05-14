@@ -120,20 +120,24 @@ module.exports = (
     const { price } = req.body;
     if (!price) return res.status(400).send({ message: "Price is required" });
 
-    // Price is already converted to cents in the frontend
-    const amount = parseInt(price);
+    try {
+      // Convert price to cents as per user request
+      const amount = parseInt(price * 100);
+      const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-    const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount,
-      currency: "usd",
-      payment_method_types: ["card"],
-    });
-
-    res.send({
-      clientSecret: paymentIntent.client_secret,
-    });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    } catch (error) {
+      console.error("Stripe Backend Error:", error);
+      res.status(500).send({ message: error.message });
+    }
   });
 
   // --- 10. Save Payment Details ---
