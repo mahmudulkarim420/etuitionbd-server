@@ -63,8 +63,11 @@ module.exports = (
   router.get("/applied-tutors/:tuitionId", async (req, res) => {
     const tuitionId = req.params.tuitionId;
     const query = { 
-      tuitionId: new ObjectId(tuitionId),
-      status: { $in: ["Approved", "Accepted"] }
+      $or: [
+        { tuitionId: tuitionId },
+        { tuitionId: new ObjectId(tuitionId) }
+      ]
+      // No status filter — show all applications (Pending, Approved, Accepted, Rejected)
     };
     const result = await applicationsCollection.find(query).toArray();
     res.send(result);
@@ -75,8 +78,8 @@ module.exports = (
   router.get("/applications/student/:email", async (req, res) => {
     const email = req.params.email;
     const query = { 
-      studentEmail: email,
-      status: { $in: ["Approved", "Accepted"] }
+      studentEmail: email
+      // No status filter — show all applications so student can manage them
     };
     const result = await applicationsCollection.find(query).toArray();
     res.send(result);
@@ -92,10 +95,25 @@ module.exports = (
     res.send(result);
   });
 
-  // GET: /api/student/payment-history/:email
-  router.get("/payment-history/:email", async (req, res) => {
+  // Alias for reject-tutor
+  router.patch("/application/reject/:id", async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) };
+    const updateDoc = { $set: { status: "Rejected" } };
+    const result = await applicationsCollection.updateOne(filter, updateDoc);
+    res.send(result);
+  });
+
+  // GET: /api/student/payments/:email
+  router.get("/payments/:email", async (req, res) => {
     const email = req.params.email;
-    const query = { studentEmail: email }; // Payment save korar shomoy studentEmail rakha hoyeche
+    // Search by both studentEmail and email for backward compatibility and robustness
+    const query = { 
+      $or: [
+        { studentEmail: email },
+        { email: email }
+      ]
+    };
     const result = await paymentsCollection.find(query).toArray();
     res.send(result);
   });

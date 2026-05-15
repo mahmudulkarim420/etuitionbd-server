@@ -11,7 +11,7 @@ module.exports = (usersCollection, tuitionsCollection, tutorsCollection) => {
   // GET /all-tuitions - Advanced search, filtering, sorting, and pagination
   router.get("/all-tuitions", async (req, res) => {
     try {
-      const { search, class: filterClass, subject, sortSalary, sortDate, page = 1, limit = 6 } = req.query;
+      const { search, class: filterClass, subject, location, sort, page = 1, limit = 6 } = req.query;
       
       // 1. Build Query (Filtering & Search)
       let query = { status: "Approved" };
@@ -31,14 +31,20 @@ module.exports = (usersCollection, tuitionsCollection, tutorsCollection) => {
         query.subject = subject;
       }
 
+      if (location) {
+        query.location = { $regex: location, $options: "i" };
+      }
+
       // 2. Build Sort
-      let sort = {};
-      if (sortSalary) {
-        sort.salary = sortSalary === "asc" ? 1 : -1;
-      } else if (sortDate === "newest") {
-        sort.createdAt = -1;
+      let sortObj = {};
+      if (sort === "salary-asc") {
+        sortObj.salary = 1;
+      } else if (sort === "salary-desc") {
+        sortObj.salary = -1;
+      } else if (sort === "date-newest") {
+        sortObj.createdAt = -1;
       } else {
-        sort.createdAt = -1; // Default: newest first
+        sortObj.createdAt = -1; // Default
       }
 
       // 3. Pagination Logic
@@ -49,7 +55,7 @@ module.exports = (usersCollection, tuitionsCollection, tutorsCollection) => {
       const totalCount = await tuitionsCollection.countDocuments(query);
       const tuitions = await tuitionsCollection
         .find(query)
-        .sort(sort)
+        .sort(sortObj)
         .skip(skip)
         .limit(limitCount)
         .toArray();
@@ -81,7 +87,7 @@ module.exports = (usersCollection, tuitionsCollection, tutorsCollection) => {
         email: user.email,
         photoUrl: user.photoUrl,
         role: user.role || "Student",
-        phone: "",
+        phone: user.phone || "",
         createdAt: new Date(),
       };
 
@@ -164,10 +170,17 @@ module.exports = (usersCollection, tuitionsCollection, tutorsCollection) => {
     }
   });
 
-  // GET /tutors - Fetch all tutors from the dedicated collection
+  // GET /tutors - Fetch tutors with dynamic sorting and limiting
   router.get("/tutors", async (req, res) => {
     try {
-      const tutors = await tutorsCollection.find({}).toArray();
+      const limit = parseInt(req.query.limit) || 6;
+      const sortOrder = req.query.sort === 'asc' ? 1 : -1;
+
+      const tutors = await tutorsCollection
+        .find({})
+        .sort({ _id: sortOrder })
+        .limit(limit)
+        .toArray();
       res.send(tutors);
     } catch (error) {
       console.error("Error fetching tutors:", error);

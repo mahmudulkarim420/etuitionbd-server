@@ -56,8 +56,8 @@ async function run() {
 
     // --- ROUTES IMPORT ---
     const studentRoutes = require("./routes/studentRoutes")(usersCollection, tuitionsCollection, applicationsCollection, paymentsCollection);
-    const tutorRoutes = require("./routes/tutorRoutes")(tuitionsCollection, applicationsCollection, paymentsCollection);
-    const adminRoutes = require("./routes/adminRoutes")(usersCollection, tuitionsCollection, paymentsCollection, applicationsCollection);
+    const tutorRoutes = require("./routes/tutorRoutes")(tuitionsCollection, applicationsCollection, paymentsCollection, tutorsCollection);
+    const adminRoutes = require("./routes/adminRoutes")(usersCollection, tuitionsCollection, paymentsCollection, applicationsCollection, tutorsCollection);
     const publicRoutes = require("./routes/publicRoutes")(usersCollection, tuitionsCollection, tutorsCollection);
 
     // --- USE ROUTES ---

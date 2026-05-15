@@ -6,7 +6,7 @@ const router = express.Router();
  * Admin Routes
  * Handles user management, tuition moderation, and system statistics
  */
-module.exports = (usersCollection, tuitionsCollection, paymentsCollection, applicationsCollection) => {
+module.exports = (usersCollection, tuitionsCollection, paymentsCollection, applicationsCollection, tutorsCollection) => {
 
   // GET /all-applications - Fetch all tutor applications for moderation
   router.get("/all-applications", async (req, res) => {
@@ -53,9 +53,57 @@ module.exports = (usersCollection, tuitionsCollection, paymentsCollection, appli
       const filter = { _id: new ObjectId(id) };
       const updateDoc = { $set: { role: role } };
       const result = await usersCollection.updateOne(filter, updateDoc);
+
+      // If role is updated to 'Tutor', ensure they exist in tutorsCollection
+      if (role?.toLowerCase() === "tutor") {
+        const user = await usersCollection.findOne(filter);
+        if (user) {
+          const existingTutor = await tutorsCollection.findOne({ email: user.email });
+          if (!existingTutor) {
+            const newTutor = {
+              name: user.name,
+              email: user.email,
+              uid: user.uid || "",
+              photo: user.photo || "",
+              qualifications: "",
+              bio: "",
+              experience: "Fresh",
+              status: "Pending",
+              createdAt: new Date()
+            };
+            await tutorsCollection.insertOne(newTutor);
+            // We still return the original result but can augment it if needed
+            return res.send({ ...result, message: "User promoted and tutor profile created." });
+          }
+        }
+      }
+
       res.send(result);
     } catch (error) {
       console.error("Error updating user role:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
+  // PATCH /user/details/:id - Update user contact/verification details
+  router.patch("/user/details/:id", async (req, res) => {
+    const id = req.params.id;
+    const { phone, isVerified, name, photoUrl, status } = req.body;
+    try {
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = { 
+        $set: { 
+          phone: phone,
+          isVerified: isVerified,
+          name: name,
+          photoUrl: photoUrl,
+          status: status || 'Active'
+        } 
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    } catch (error) {
+      console.error("Error updating user details:", error);
       res.status(500).send({ message: "Internal Server Error" });
     }
   });
@@ -137,29 +185,54 @@ module.exports = (usersCollection, tuitionsCollection, paymentsCollection, appli
     }
   });
 
-  // GET /admin-stats - System overview and revenue tracking
+  // GET /admin-stats - System overview and revenue tracking for charts
   router.get("/admin-stats", async (req, res) => {
     try {
-      // 1. Total Revenue calculation
+      // 1. User Role Distribution
+      const users = await usersCollection.find({}, { projection: { role: 1 } }).toArray();
+      const roleStats = users.reduce((acc, user) => {
+        const role = user.role?.toLowerCase() || "student";
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+      }, { student: 0, tutor: 0, admin: 0 });
+
+      const roleData = [
+        { name: "Students", value: roleStats.student },
+        { name: "Tutors", value: roleStats.tutor },
+        { name: "Admins", value: roleStats.admin },
+      ];
+
+      // 2. Revenue over time (Trend)
       const payments = await paymentsCollection.find().toArray();
-      const totalRevenue = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+      const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-      // 2. User and Tuition counts
-      const studentsCount = await usersCollection.countDocuments({ role: "Student" });
-      const tutorsCount = await usersCollection.countDocuments({ role: "Tutor" });
-      const approvedTuitionsCount = await tuitionsCollection.countDocuments({ status: "Approved" });
+      // Group payments by date (YYYY-MM-DD)
+      const revenueTrendMap = payments.reduce((acc, p) => {
+        const date = p.date ? new Date(p.date).toISOString().split('T')[0] : "Unknown";
+        acc[date] = (acc[date] || 0) + p.amount;
+        return acc;
+      }, {});
 
-      // 3. All Transactions for the reports page
-      const transactions = payments;
+      const revenueTrend = Object.keys(revenueTrendMap).sort().map(date => ({
+        date,
+        amount: revenueTrendMap[date]
+      }));
+
+      // 3. Tuition Summary
+      const totalTuitions = await tuitionsCollection.countDocuments();
+      const approvedTuitions = await tuitionsCollection.countDocuments({ status: "Approved" });
 
       res.send({
-        totalRevenue,
-        counts: {
-          students: studentsCount,
-          tutors: tutorsCount,
-          approvedTuitions: approvedTuitionsCount
-        },
-        transactions
+        roleData,
+        revenueTrend,
+        stats: {
+          totalRevenue,
+          totalUsers: users.length,
+          totalTuitions,
+          approvedTuitions,
+          studentCount: roleStats.student,
+          tutorCount: roleStats.tutor
+        }
       });
     } catch (error) {
       console.error("Error fetching admin stats:", error);
